@@ -1,0 +1,13 @@
+# .gitignore
+dist/
+build/
+*.exe
+*.pkg
+db.sqlite3
+.env
+__pycache__/
+*.pycdist/ 
+build/ 
+*.exe 
+*.pkg 
+db.sqlite3 

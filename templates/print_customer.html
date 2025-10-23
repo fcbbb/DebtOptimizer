@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ customer.name }} - 债务优化信息</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            .print-exclude {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="text-center mb-4">
+        <h1>债务优化客户信息表</h1>
+    </div>
+
+    <!-- 打印选择面板 -->
+    <div class="selection-panel no-print">
+        <h5 class="mb-3">选择打印内容</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="selection-item">
+                    <input type="checkbox" id="select-basic" checked> 
+                    <label for="select-basic">基本信息</label>
+                </div>
+                <div class="selection-item">
+                    <input type="checkbox" id="select-finance" checked> 
+                    <label for="select-finance">财务概览</label>
+                </div>
+                <div class="selection-item">
+                    <input type="checkbox" id="select-creditcard" checked> 
+                    <label for="select-creditcard">信用卡账单明细</label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="selection-item">
+                    <input type="checkbox" id="select-loan" checked> 
+                    <label for="select-loan">信用贷款账单明细</label>
+                </div>
+                <div class="selection-item">
+                    <input type="checkbox" id="select-monthly" checked> 
+                    <label for="select-monthly">月供出款记录</label>
+                </div>
+                <div class="selection-item">
+                    <input type="checkbox" id="select-creditpayment" checked> 
+                    <label for="select-creditpayment">信用卡出款记录</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 基本信息 -->
+    <div id="section-basic">
+    <table class="table table-bordered mb-4">
+        <tr>
+            <th class="w-33 border-thin">客户姓名</th>
+            <td class="w-33 border-thin">{{ customer.name }}</td>
+            <th class="w-33 border-thin">电话及微信号</th>
+            <td class="w-33 border-thin">{{ customer.phone }}</td>
+            <th class="w-33 border-thin">打印时间</th>
+            <td class="w-33 border-thin">{{ now|date:"Y-m-d" }}</td>
+        </tr>
+        <tr>
+            <th class="w-33 border-thin">信用卡倍率</th>
+            <td class="w-33 border-thin">{{ customer.credit_card_multiplier|default:"0.03" }}</td>
+            <th class="w-33 border-thin">月供倍率</th>
+            <td class="w-33 border-thin">{{ customer.monthly_payment_multiplier|default:"0.002" }}</td>
+            <th class="w-33 border-thin">融资日期</th>
+            <td class="w-33 border-thin">{{ customer.financing_date|date:"Y-m-d" }}</td>
+        </tr>
+    </table>
+    </div>
+
+    <!-- 财务概览 -->
+    <div id="section-finance">
+    <h5>财务概览</h5>
+    <table class="table table-bordered mb-4">
+        <thead class="table-light">
+            <tr>
+                <th>总负债</th>
+                <th>总月供</th>
+                <th>总出款</th>
+                <th>总使用成本</th>
+                <th>本金成本总计</th>
+                <th>0账单费用总计</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+            {% if total_debt or total_monthly or total_payment or total_cost or total_fee or total_credit_card_fee %}
+                <td>¥{{ total_debt|floatformat:2 }}</td>
+                <td>¥{{ total_monthly|floatformat:2 }}</td>
+                <td>¥{{ total_payment|floatformat:2 }}</td>
+                <td>¥{{ total_cost|floatformat:2 }}</td>
+                <td>¥{{ total_fee|floatformat:2 }}</td>
+                <td>¥{{ total_credit_card_fee|floatformat:2 }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center">暂无数据</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+    </div>
+
+    <!-- 信用卡账单明细 -->
+    <div id="section-creditcard">
+    <h5>信用卡账单明细</h5>
+    <table class="table table-bordered mb-4">
+        <thead class="table-light">
+            <tr>
+                <th>银行渠道</th>
+                <th>总授信额度</th>
+                <th>有无分期</th>
+                <th>分期金额</th>
+                <th>账单日</th>
+                <th>还款日</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for card in customer.creditcard_set.all %}
+            <tr>
+                <td>{{ card.bank }}</td>
+                <td>¥{{ card.total_limit|floatformat:2 }}</td>
+                <td>{% if card.has_installment %}是{% else %}否{% endif %}</td>
+                <td>¥{{ card.installment_amount|floatformat:2 }}</td>
+                <td>{{ card.billing_date|date:"Y-m-d" }}</td>
+                <td>{{ card.repayment_date|date:"Y-m-d" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center">暂无数据</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <!-- 信用贷款账单明细 -->
+    <div id="section-loan">
+    <h5>信用贷款账单明细</h5>
+    <table class="table table-bordered mb-4">
+        <thead class="table-light">
+            <tr>
+                <th>银行渠道</th>
+                <th>总授信额度</th>
+                <th>贷款余额</th>
+                <th>月还款</th>
+                <th>到期时间</th>
+                <th>还款日</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for loan in customer.loan_set.all %}
+            <tr>
+                <td>{{ loan.bank }}</td>
+                <td>¥{{ loan.total_limit|floatformat:2 }}</td>
+                <td>¥{{ loan.balance|floatformat:2 }}</td>
+                <td>¥{{ loan.monthly_payment|floatformat:2 }}</td>
+                <td>{{ loan.due_date|date:"Y-m-d" }}</td>
+                <td>{{ loan.repayment_date|date:"Y-m-d" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center">暂无数据</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <!-- 月供出款记录 -->
+    <div id="section-monthly">
+    <h5>月供出款记录</h5>
+    <table class="table table-bordered mb-4">
+        <thead class="table-light">
+            <tr>
+                <th>出款时间</th>
+                <th>出款金额</th>
+                <th>是否私人借款</th>
+                <th>资金使用天数</th>
+                <th>资金使用成本</th>
+                <th>备注</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mp in customer.monthlypayment_set.all %}
+            <tr>
+                <td>{{ mp.payment_date|date:"Y-m-d" }}</td>
+                <td>¥{{ mp.amount|floatformat:2 }}</td>
+                <td>{% if mp.is_private %}是{% else %}否{% endif %}</td>
+                <td>{{ mp.days_used }}</td>
+                <td>¥{{ mp.cost|floatformat:2 }}</td>
+                <td>{{ mp.notes }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center">暂无数据</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <!-- 信用卡出款记录 -->
+    <div id="section-creditpayment">
+    <h5>信用卡出款记录</h5>
+    <table class="table table-bordered mb-4">
+        <thead class="table-light">
+            <tr>
+                <th>出款时间</th>
+                <th>银行</th>
+                <th>出款金额</th>
+                <th>信用卡费率</th>
+                <th>刷出金额</th>
+                <th>刷出时间</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cp in customer.creditcardpayment_set.all %}
+            <tr>
+                <td>{{ cp.payment_date|date:"Y-m-d" }}</td>
+                <td>{{ cp.bank }}</td>
+                <td>¥{{ cp.payment_amount|floatformat:2 }}</td>
+                <td>¥{{ cp.fee|floatformat:2 }}</td>
+                <td>¥{{ cp.withdrawal_amount|floatformat:2 }}</td>
+                <td>{{ cp.withdrawal_date|date:"Y-m-d" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center">暂无数据</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <!-- 打印按钮 -->
+    <div class="text-center mb-4 no-print">
+        <button onclick="window.print()" class="btn btn-dark btn-lg">
+            <i class="fas fa-print"></i> 一键打印
+        </button>
+        <a href="javascript:window.close()" class="btn btn-secondary btn-lg ms-2">关闭</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 添加模板过滤器: multiply
+    document.addEventListener('DOMContentLoaded', function() {
+        // 这个过滤器在客户端不起作用，仅用于模板语法
+        // 实际计算在服务端完成
+    });
+</script>
+<script>
+    // 为每个复选框添加事件监听器
+    document.getElementById('select-basic').addEventListener('change', toggleSection);
+    document.getElementById('select-finance').addEventListener('change', toggleSection);
+    document.getElementById('select-creditcard').addEventListener('change', toggleSection);
+    document.getElementById('select-loan').addEventListener('change', toggleSection);
+    document.getElementById('select-monthly').addEventListener('change', toggleSection);
+    document.getElementById('select-creditpayment').addEventListener('change', toggleSection);
+
+    // 切换 section 显示/隐藏的函数
+    function toggleSection() {
+        const id = this.id.replace('select-', 'section-');
+        const section = document.getElementById(id);
+        if (this.checked) {
+            section.classList.remove('print-exclude');
+        } else {
+            section.classList.add('print-exclude');
+        }
+    }
+
+    // 覆盖默认的打印按钮行为
+    document.querySelector('button[onclick="window.print()"]').onclick = function() {
+        // 确保所有选中状态都已应用
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            const id = checkbox.id.replace('select-', 'section-');
+            const section = document.getElementById(id);
+            if (checkbox.checked) {
+                section.classList.remove('print-exclude');
+            } else {
+                section.classList.add('print-exclude');
+            }
+        });
+        // 执行打印
+        window.print();
+    };
+</script>
+</body>
+</html>

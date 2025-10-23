@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">{% if customer %}编辑客户{% else %}新增客户{% endif %}</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="name" class="form-label">姓名</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ customer.name|default:'' }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="phone" class="form-label">电话及微信号</label>
+                <input type="text" class="form-control" id="phone" name="phone" value="{{ customer.phone|default:'' }}">
+            </div>
+            <div class="mb-3">
+                <label for="company_id" class="form-label">所属公司</label>
+                <select class="form-control" id="company_id" name="company_id">
+                    <option value="">-- 请选择公司 --</option>
+                    {% for company in companies %}
+                        <option value="{{ company.id }}" {% if customer and customer.company_id == company.id %}selected{% endif %}>{{ company.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="financing_date" class="form-label">融资日期</label>
+                <input type="date" class="form-control" id="financing_date" name="financing_date" value="{{ customer.financing_date|date:'Y-m-d'|default:'' }}">
+            </div>
+            <div class="mb-3">
+                <label for="contract_date" class="form-label">签约日期</label>
+                <input type="date" class="form-control" id="contract_date" name="contract_date" value="{{ customer.contract_date|date:'Y-m-d'|default:'' }}">
+            </div>
+            <div class="mb-3">
+                <label for="credit_card_multiplier" class="form-label">信用卡倍率</label>
+                <input type="number" step="0.01" min="0" max="99.99" class="form-control" id="credit_card_multiplier" name="credit_card_multiplier" value="{{ customer.credit_card_multiplier|default:'0.03' }}">
+                <div class="form-text">用于计算信用卡费用的倍率，默认为0.03</div>
+            </div>
+            <div class="mb-3">
+                <label for="monthly_payment_multiplier" class="form-label">月供倍率</label>
+                <input type="number" step="0.001" min="0" max="99.999" class="form-control" id="monthly_payment_multiplier" name="monthly_payment_multiplier" value="{{ customer.monthly_payment_multiplier|default:'0.002' }}">
+                <div class="form-text">用于计算月供成本的倍率，默认为0.002</div>
+            </div>
+            <div class="mb-3">
+                <label for="notes" class="form-label">备注</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3">{{ customer.notes|default:'' }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">保存</button>
+            {% if customer %}
+            <a href="{% url 'core:customer_detail' customer.id %}" class="btn btn-outline-secondary ms-2">取消</a>
+            {% else %}
+            <a href="{% url 'core:customer_list' %}" class="btn btn-outline-secondary ms-2">取消</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

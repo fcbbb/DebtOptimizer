@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">确认删除客户</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-danger">您确定要删除客户 <strong>{{ customer.name }}</strong> 吗？</p>
+        <p>此操作不可撤销，将删除该客户的所有相关信息。</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">确认删除</button>
+            <a href="{% url 'core:customer_detail' customer.id %}" class="btn btn-outline-secondary ms-2">取消</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

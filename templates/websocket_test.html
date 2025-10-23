@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #messages {
+            border: 1px solid #ccc;
+            height: 300px;
+            overflow-y: scroll;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .info {
+            background-color: #e7f3ff;
+        }
+        .success {
+            background-color: #d4edda;
+        }
+        .error {
+            background-color: #f8d7da;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket测试页面</h1>
+    <div>
+        <label for="task_id">任务ID:</label>
+        <input type="text" id="task_id" placeholder="输入任务ID">
+        <button onclick="connect()">连接</button>
+        <button onclick="disconnect()">断开连接</button>
+    </div>
+    <div id="messages"></div>
+
+    <script>
+        let ws = null;
+
+        function connect() {
+            const taskId = document.getElementById('task_id').value;
+            if (!taskId) {
+                addMessage('请输入任务ID', 'error');
+                return;
+            }
+
+            // 构建WebSocket URL
+            const wsUrl = `ws://${window.location.host}/ws/agent/task/${taskId}/`;
+            
+            // 创建WebSocket连接
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function(event) {
+                addMessage(`已连接到任务 ${taskId}`, 'success');
+            };
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                addMessage(`收到消息: ${JSON.stringify(data)}`, 'info');
+            };
+
+            ws.onclose = function(event) {
+                addMessage('连接已关闭', 'error');
+            };
+
+            ws.onerror = function(error) {
+                addMessage(`WebSocket错误: ${error}`, 'error');
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function addMessage(message, type) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = message;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>

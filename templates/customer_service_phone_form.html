@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if phone %}编辑{% else %}添加{% endif %}客服电话{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{% if phone %}编辑{% else %}添加{% endif %}客服电话</h2>
+        <a href="{% url 'core:customer_service_phone_list' %}" class="btn btn-secondary">返回列表</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="bank_name" class="form-label">银行/机构名称</label>
+                    <input type="text" class="form-control" id="bank_name" name="bank_name" value="{{ phone.bank_name|default:'' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="phone_number" class="form-label">客服电话</label>
+                    <input type="text" class="form-control" id="phone_number" name="phone_number" value="{{ phone.phone_number|default:'' }}" required>
+                </div>
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a href="{% url 'core:customer_service_phone_list' %}" class="btn btn-secondary">取消</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

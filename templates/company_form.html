@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if company %}编辑公司{% else %}创建公司{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{% if company %}编辑公司{% else %}创建公司{% endif %}</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="name">公司名称</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ company.name|default:'' }}" required>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">保存</button>
+        <a href="{% url 'core:company_list' %}" class="btn btn-secondary mt-3 ml-2">取消</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>还款日历</h3>
+<p class="text-muted">查看未来7天的还款计划</p>
+
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>日期</th>
+                <th>信用卡还款</th>
+                <th>贷款月供</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for date, data in calendar_data.items %}
+            <tr {% if date == today %}class="table-warning"{% endif %}>
+                <td><strong>{{ date|date:"m月d日 (D)" }}</strong></td>
+                <td>
+                    {% for card in data.cards %}
+                        <div>{{ card.customer.name }} - {{ card.bank }}</div>
+                    {% empty %}
+                        <span class="text-muted">无</span>
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for loan in data.loans %}
+                        <div>{{ loan.customer.name }} - {{ loan.bank }} (¥{{ loan.monthly_payment }})</div>
+                    {% empty %}
+                        <span class="text-muted">无</span>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

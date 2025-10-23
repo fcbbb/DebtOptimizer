@@ -1,0 +1,39 @@
+{% extends "admin/change_list.html" %}
+
+
+{% block object-tools %}
+  {{ block.super }}
+  {# 在 "object-tools" 区域（搜索框旁边）添加我们的按钮 #}
+  <ul class="object-tools">
+    <li>
+      <a href="import-excel/" class="historylink">
+        📥 从 Excel 导入客户
+      </a>
+    </li>
+    {{ block.super }}
+  </ul>
+{% endblock %}
+
+
+{% block content %}
+  {% if not cl.full_result_count %}
+    {# 如果没有客户，显示一个更醒目的提示 #}
+    <div class="module" id="no-data">
+      <h2>欢迎使用债务优化管理系统</h2>
+      <p>当前没有客户数据。请通过以下方式开始：</p>
+      <a href="import-excel/" class="button">📥 点击此处从 Excel 导入客户</a>
+    </div>
+  {% else %}
+    {# 如果有客户，显示标准的列表 #}
+    {{ block.super }}
+  {% endif %}
+{% endblock %}
+
+{% block result_list %}
+  {{ block.super }}
+  {# 我们不在此处添加按钮，而是通过 CSS 将全局按钮移动到工具栏 #}
+{% endblock %}
+
+{% block pagination %}
+  {{ block.super }}
+{% endblock %}

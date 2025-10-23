@@ -1,0 +1,51 @@
+.ai-agent-panel {
+    position: fixed;
+    top: 0;
+    right: -500px;
+    width: 450px;
+    height: 100vh;
+    background-color: #fff;
+    box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+    z-index: 1050;
+    transition: right 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+}
+
+.ai-agent-panel.active {
+    right: 0;
+}
+
+.ai-agent-panel-header {
+    padding: 15px;
+    background-color: #0d6efd;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.ai-agent-panel-body {
+    padding: 15px;
+    overflow-y: auto;
+    flex-grow: 1;
+    margin-top: 60px; /* 避开导航栏的高度 */
+    height: calc(100vh - 60px); /* 调整高度 */
+}
+
+/* 覆盖页面的遮罩层 */
+.ai-agent-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.0); /* 透明遮罩 */
+    z-index: 1040;
+    display: none;
+}
+
+.ai-agent-overlay.active {
+    display: block;
+}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>将PNG转换为ICO图标指南</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        .step { margin-bottom: 20px; padding: 15px; background-color: #f5f5f5; border-radius: 5px; }
+        h1 { color: #333; }
+        h2 { color: #555; }
+        code { background: #eee; padding: 2px 5px; border-radius: 3px; }
+        .tools { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .tool { padding: 10px; background: #e0f7fa; border: 1px solid #b2ebf2; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>将PNG图片转换为ICO图标并在网站中使用</h1>
+
+    <div class="step">
+        <h2>步骤 1: 准备PNG图片</h2>
+        <p>确保您有一张适合作为图标的PNG图片。建议尺寸为32×32像素或64×64像素，背景透明效果更佳。</p>
+    </div>
+
+    <div class="step">
+        <h2>步骤 2: 转换PNG为ICO格式</h2>
+        <p>使用以下在线工具将PNG图片转换为ICO格式：</p>
+        <div class="tools">
+            <div class="tool"><a href="https://www.icoconverter.com/" target="_blank">ICO Converter</a></div>
+            <div class="tool"><a href="https://convertio.co/zh/png-ico/" target="_blank">Convertio</a></div>
+            <div class="tool"><a href="https://www.freeconvert.com/png-to-ico" target="_blank">FreeConvert</a></div>
+        </div>
+        <p>转换后的文件保存为 <code>favicon.ico</code>。</p>
+    </div>
+
+    <div class="step">
+        <h2>步骤 3: 上传ICO文件</h2>
+        <p>将转换后的 <code>favicon.ico</code> 文件复制到项目的 <code>static</code> 目录下。</p>
+        <p>路径应为: <code>h:\DebtOptimizer\static\favicon.ico</code></p>
+    </div>
+
+    <div class="step">
+        <h2>步骤 4: 确认图标引用</h2>
+        <p>确保 <code>templates\base.html</code> 文件中已包含以下代码（通常在 <code>&lt;head&gt;</code> 标签内）：</p>
+        <code>&lt;link rel="icon" type="image/x-icon" href="/static/favicon.ico"&gt;</code>
+    </div>
+
+    <div class="step">
+        <h2>步骤 5: 刷新浏览器</h2>
+        <p>清除浏览器缓存并刷新网页，新图标应该会显示在浏览器标签页上。</p>
+    </div>
+</body>
+</html>

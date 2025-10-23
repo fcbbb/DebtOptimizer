@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>编辑信用卡出款记录 - {{ customer.name }}</h3>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div id="credit-card-payment-forms">
+                <div class="credit-card-payment-form-item mb-4 p-3 border rounded">
+                    <h5>信用卡出款记录</h5>
+                    <div class="mb-3">
+                        <label for="payment_date_0" class="form-label">出款时间</label>
+                        <input type="date" class="form-control" id="payment_date_0" name="payment_date" value="{{ payment.payment_date|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payment_amount_0" class="form-label">出款金额</label>
+                        <input type="number" step="0.01" class="form-control" id="payment_amount_0" name="payment_amount" value="{{ payment.payment_amount }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="bank_0" class="form-label">银行</label>
+                        <input type="text" class="form-control" id="bank_0" name="bank" value="{{ payment.bank }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="withdrawal_amount_0" class="form-label">刷出金额</label>
+                        <input type="number" step="0.01" class="form-control" id="withdrawal_amount_0" name="withdrawal_amount" value="{{ payment.withdrawal_amount }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="withdrawal_date_0" class="form-label">刷出时间</label>
+                        <input type="date" class="form-control" id="withdrawal_date_0" name="withdrawal_date" value="{{ payment.withdrawal_date|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes_0" class="form-label">备注</label>
+                        <textarea class="form-control" id="notes_0" name="notes" rows="3">{{ payment.notes|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">保存记录</button>
+                <a href="{% url 'core:customer_detail' payment.customer.id %}" class="btn btn-secondary ms-2">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

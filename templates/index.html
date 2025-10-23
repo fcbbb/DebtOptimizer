@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% block page_class %}home-page{% endblock %}
+{% block content %}
+<input type="hidden" id="show_celebration_flag" value="{{ show_celebration }}">
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">📅 需还款客户提醒</h5>
+            </div>
+            <div class="card-body">
+                {% if tasks_completed %}
+                    <div class="alert alert-success text-center">
+                        <h4 class="mb-0">恭喜你，今天的任务都完成啦！</h4>
+                    </div>
+                {% elif due_customers %}
+                    <div class="alert alert-warning">
+                        <strong>🔔 {{ today_date }} 有 {{ due_customers|length }} 位客户需要处理还款：</strong>
+                        <div class="container-fluid">
+                            <div class="row">
+                                {% for customer in due_customers %}
+                                <div class="col-md-4 col-sm-6 col-12 mb-2">
+                                    <div class="customer-item">
+                                        <div class="customer-info" style="display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; height: 100%;">
+                                            <a href="{% url 'core:customer_detail' customer.id %}" style="white-space: nowrap; flex-grow: 1;">
+                                                <strong>{{ customer.name }}</strong> - {{ customer.phone }}
+                                            </a>
+                                            <!-- 只有在选择了公司后才显示操作按钮 -->
+                                            {% if selected_company_id %}
+                                            <button type="button" 
+                                                    class="btn btn-sm homepage-complete-btn toggle-status-btn {% if customer.id in completed_customers %}btn-success{% else %}btn-secondary{% endif %}"
+                                                    data-customer-id="{{ customer.id }}"
+                                                    data-csrf="{{ csrf_token }}"
+                                                    style="margin-left: 5px; margin-right: 5px; flex-shrink: 0;">
+                                                {% if customer.id in completed_customers %}已完成{% else %}标记完成{% endif %}
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if forloop.counter|divisibleby:3 and not forloop.last %}
+                            </div>
+                            <div class="row">
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% if tasks_completed %}
+                            <button class="btn btn-success homepage-complete-btn" disabled>任务已完成</button>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <p class="text-success">🎉 明天没有需要还款的客户，一切顺利！</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">📅 融资日期提醒</h5>
+            </div>
+            <div class="card-body">
+                {% if financing_reminder_customers %}
+                    <div class="alert alert-warning">
+                        <strong>🔔 未来70天内有 {{ financing_reminder_customers|length }} 位客户融资日期到期：</strong>
+                        <ul class="mb-3">
+                            {% for customer in financing_reminder_customers %}
+                            <li class="customer-item mb-2">
+                                <div class="customer-info">
+                                    <a href="{% url 'core:customer_detail' customer.id %}">
+                                        <strong>{{ customer.name }}</strong> - {{ customer.phone }}
+                                    </a>
+                                    <span class="ms-2 badge bg-warning text-dark">
+                                        剩余 {{ customer.days_until_financing.days }} 天
+                                    </span>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% else %}
+                    <p class="text-success">🎉 暂无需要提醒的融资客户</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0">📋 签约日期提醒</h5>
+                </div>
+                <div class="card-body">
+                    {% if contract_reminder_customers and not contract_reminder_completed %}
+                        <div class="alert alert-danger contract-reminders-section">
+                            <strong>🔔 有 {{ contract_reminder_customers|length }} 位客户需要处理签约日期提醒：</strong>
+                            <ul class="mb-3">
+                                {% for customer in contract_reminder_customers %}
+                                <li class="customer-item mb-2">
+                                    <div class="customer-info">
+                                    <a href="{% url 'core:customer_detail' customer.id %}">
+                                        <strong>{{ customer.name }}</strong> - {{ customer.phone }}
+                                    </a>
+                                    <span class="ms-2 badge bg-danger text-white">
+                                        已签约 {{ customer.days_since_contract }} 天
+                                    </span>
+                                    <span class="ms-2 badge bg-info text-white">
+                                        第{{ customer.reminder_count }}次提醒
+                                    </span>
+                                    <span class="ms-2 badge bg-primary text-white">
+                                        下次: {{ customer.next_reminder_date|date:'Y-m-d' }}
+                                    </span>
+                                    {% if selected_company_id %}
+                                    <button type="button" 
+                                            class="btn btn-sm homepage-complete-btn contract-reminder-btn {% if customer.id in completed_contract_customers %}btn-success{% else %}btn-secondary{% endif %}"
+                                            data-customer-id="{{ customer.id }}"
+                                            data-csrf="{{ csrf_token }}">
+                                        {% if customer.id in completed_contract_customers %}已处理{% else %}标记已处理{% endif %}
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% elif contract_reminder_customers and contract_reminder_completed %}
+                        <p class="text-success">🎉 所有签约提醒已处理完成！</p>
+                    {% else %}
+                        <p class="text-success">🎉 暂无需要处理的签约提醒</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">👥 总客户数</h5>
+                <p class="card-text display-6">{{ total_customers }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">💰 月供总额</h5>
+                <p class="card-text display-6">¥{{ total_monthly_payment|floatformat:2 }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">💳 总负债</h5>
+                <p class="card-text display-6">¥{{ total_debt_limit|floatformat:2 }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-danger mb-3">
+            <div class="card-body">
+                <h5 class="card-title">💸 总出款</h5>
+                <p class="card-text display-6">¥{{ total_payment|floatformat:2 }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <a href="{% url 'core:customer_list' %}" class="btn btn-lg btn-outline-primary w-100 mb-3">
+            <i class="fas fa-users"></i> 查看所有客户
+        </a>
+    </div>
+    <div class="col-md-6">
+        <a href="{% url 'core:calendar' %}" class="btn btn-lg btn-outline-info w-100 mb-3">
+            <i class="fas fa-calendar-alt"></i> 查看还款日历
+        </a>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}公司列表{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">公司列表</h2>
+        <a href="{% url 'core:company_create' %}" class="btn btn-primary">添加公司</a>
+    </div>
+    
+    
+    {% if companies %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>序号</th>
+                    <th>公司名称</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for company in companies %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ company.name }}</td>
+                    <td>
+                        <a href="{% url 'core:company_update' company.id %}" class="btn btn-sm btn-warning">编辑</a>
+                        <a href="{% url 'core:company_delete' company.id %}" class="btn btn-sm btn-danger">删除</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>暂无公司数据，请点击上方"添加公司"按钮创建。</p>
+    {% endif %}
+</div>
+{% endblock %}

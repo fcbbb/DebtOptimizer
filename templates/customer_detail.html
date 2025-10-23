@@ -1,0 +1,813 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    /* 自定义动画 */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.5s ease forwards; }
+    .stats-container { animation-delay: 0.2s; }
+    .card:nth-child(1) { animation-delay: 0.3s; }
+    .card:nth-child(2) { animation-delay: 0.4s; }
+    .card:nth-child(3) { animation-delay: 0.5s; }
+    .card:nth-child(4) { animation-delay: 0.6s; }
+    .card:nth-child(5) { animation-delay: 0.7s; }
+</style>
+
+<div class="fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-6">
+        <h3 class="text-primary">{{ customer.name }} 
+            <span class="ml-2 text-sm"><i class="fas fa-calendar-alt"></i> 融资日期</span>
+            {% if customer.financing_date %}
+                <span class="text-gray-500 italic text-sm">{{ customer.financing_date|date:"Y-m-d" }}</span>
+            {% else %}
+                <span class="text-gray-500 italic text-sm">未设置</span>
+            {% endif %}
+            <div class="btn-group" role="group">
+                {% if not customer.is_archived %}
+                <form method="post" action="{% url 'core:archive_customer' customer.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning ms-2 shadow-sm hover:shadow-md transition-shadow duration-300" 
+                            onclick="return confirm('确定要将此客户归档吗？归档后客户将不再参与统计和提醒功能。')">
+                        归档客户
+                    </button>
+                </form>
+                {% else %}
+                <button type="button" class="btn btn-info ms-2 shadow-sm hover:shadow-md transition-shadow duration-300 disabled" 
+                        title="归档客户无法取消归档">
+                    已归档
+                </button>
+                {% endif %}
+                <form method="post" action="{% url 'core:customer_delete' customer.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger ms-2 shadow-sm hover:shadow-md transition-shadow duration-300"
+                        onclick="return confirm('确定要永久删除此客户吗？此操作不可恢复！')">
+                        删除客户
+                    </button>
+                </form>
+            </div>
+        </h3>
+        <div class="btn-group" role="group">
+            <a href="{% url 'core:print_customer' customer.id %}" class="btn btn-success me-2 shadow-sm" target="_blank">
+                <i class="fas fa-print"></i> 打印
+            </a>
+            <a href="{% url 'core:export_excel' customer.id %}" class="btn btn-warning shadow-sm">
+                <i class="fas fa-file-export"></i> 导出 Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- 财务概览 -->
+    <div class="row mb-6 fade-in stats-container">
+        <div class="col-md-3">
+            <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl shadow-sm border border-blue-200">
+                <h6 class="text-blue-700 font-medium mb-1">总负债</h6>
+                <p class="text-2xl font-bold text-blue-900">¥{{ total_debt|floatformat:2 }}</p>
+
+                <div class="w-full bg-blue-200 rounded-full h-2 mt-2">
+                    <div class="bg-blue-600 h-2 rounded-full" style="width: {% widthratio total_debt|default:0 10000 1 %}%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl shadow-sm border border-green-200">
+                <h6 class="text-green-700 font-medium mb-1">总月供</h6>
+                <p class="text-2xl font-bold text-green-900">¥{{ total_monthly|floatformat:2 }}</p>
+                <div class="w-full bg-green-200 rounded-full h-2 mt-2">
+                    <div class="bg-green-600 h-2 rounded-full" style="width: {% widthratio total_monthly|default:0 1000 1 %}%" ></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl shadow-sm border border-purple-200">
+                <h6 class="text-purple-700 font-medium mb-1">总出款</h6>
+                <p class="text-2xl font-bold text-purple-900">¥{{ total_payment|floatformat:2 }}</p>
+
+                <div class="w-full bg-purple-200 rounded-full h-2 mt-2">
+                    <div class="bg-purple-600 h-2 rounded-full" style="width: {% widthratio total_payment|default:0 10000 1 %}%" ></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl shadow-sm border border-red-200">
+                <h6 class="text-red-700 font-medium mb-1">0账单费用总计</h6>
+                <p class="text-2xl font-bold text-red-900">¥{{ total_credit_card_fee|floatformat:2 }}</p>
+
+                <div class="w-full bg-red-200 rounded-full h-2 mt-2">
+                    <div class="bg-red-600 h-2 rounded-full" style="width: {% widthratio total_credit_card_fee|default:0 1000 1 %}%" ></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 基本信息 -->
+<div class="card mb-6 fade-in" style="border-top: 4px solid #6c757d;">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-gray-800"><i class="fas fa-user-circle text-secondary me-2"></i>基本信息</h5>
+        <div class="d-flex align-items-center">
+            <div class="btn-group" role="group">
+                {% if not customer.is_archived %}
+                <a href="{% url 'core:customer_update' customer.id %}" class="btn btn-primary ms-2 shadow-sm hover:shadow-md transition-shadow duration-300">编辑客户信息</a>
+                {% endif %}
+                <!-- {% if not customer.is_archived %}
+                <form method="post" action="{% url 'core:archive_customer' customer.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning ms-2 shadow-sm hover:shadow-md transition-shadow duration-300" 
+                            onclick="return confirm('确定要将此客户归档吗？归档后客户将不再参与统计和提醒功能。')">
+                        归档客户
+                    </button>
+                </form>
+                {% else %}
+                <button type="button" class="btn btn-info ms-2 shadow-sm hover:shadow-md transition-shadow duration-300 disabled" 
+                        title="归档客户无法取消归档">
+                    已归档
+                </button>
+                {% endif %}
+                <a href="{% url 'core:customer_delete' customer.id %}" class="btn btn-danger ms-2 shadow-sm hover:shadow-md transition-shadow duration-300">删除客户</a> -->
+            </div>
+            <button class="btn btn-sm btn-outline-secondary ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#basicInfo" aria-expanded="true" aria-controls="basicInfo">
+                <i class="bi bi-chevron-up"></i>
+            </button>
+        </div>
+    </div>
+    <div class="collapse show" id="basicInfo">
+        <div class="card-body bg-gray-50">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-item mb-3">
+                        <span class="text-gray-600">姓名：</span>
+                        <span class="font-medium text-gray-900">{{ customer.name }}</span>
+                    </div>
+                    <div class="info-item mb-3">
+                        <span class="text-gray-600">融资日期：</span>
+                        {% if customer.financing_date %}
+                            <span class="font-medium text-gray-900">{{ customer.financing_date|date:"Y-m-d" }}</span>
+                            {% if days_until_financing >= 0 %}
+                                <span class="badge bg-primary ml-2">剩余 {{ days_until_financing }} 天</span>
+                            {% else %}
+                                <span class="badge bg-danger ml-2">已过期 {{ days_until_financing }} 天</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-gray-500 italic">未设置</span>
+                        {% endif %}
+                    </div>
+                    <div class="info-item mb-3">
+                        <span class="text-gray-600">签约日期：</span>
+                        {% if customer.contract_date %}
+                            <span class="font-medium text-gray-900">{{ customer.contract_date|date:"Y-m-d" }}</span>
+                            {% if days_since_contract is not None %}
+                                <span class="badge bg-info ml-2">已签约 {{ days_since_contract }} 天</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-gray-500 italic">未设置</span>
+                        {% endif %}
+                    </div>
+                    <div class="info-item mb-3">
+                        <span class="text-gray-600">电话：</span>
+                        <span class="font-medium text-gray-900">{{ customer.phone }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="text-gray-600">备注：</span>
+                        <span class="font-medium text-gray-900">{{ customer.notes|default:"无" }}</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item mb-3">
+                        <span class="text-gray-600">信用卡倍率：</span>
+                        <span class="font-medium text-gray-900">{{ customer.credit_card_multiplier|default:"0.03" }}</span>
+                    </div>
+                    <div class="info-item mb-3">
+                        <span class="text-gray-600">月供倍率：</span>
+                        <span class="font-medium text-gray-900">{{ customer.monthly_payment_multiplier|default:"0.002" }}</span>
+                    </div>
+                    <div class="info-item mb-3">
+                        <span class="text-gray-600">信用卡数量：</span>
+                        <span class="font-medium text-gray-900">{{ customer.creditcard_set.all|length }}</span>
+                    </div>
+                    <div class="info-item mb-3">
+                        <span class="text-gray-600">贷款数量：</span>
+                        <span class="font-medium text-gray-900">{{ customer.loan_set.all|length }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 信用卡账单明细 -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <h5 class="mb-0 me-3">信用卡账单明细</h5>
+            {% if due_credit_cards_info_repayment_date or due_credit_cards_info_billing_date %}
+                <small class="text-light">
+                    {% if due_credit_cards_info_repayment_date %}
+                        还款日: {% for info in due_credit_cards_info_repayment_date %}{{ info.bank }} ({{ info.billing_date }}){% if not forloop.last %}, {% endif %}{% endfor %}
+                    {% endif %}
+                    {% if due_credit_cards_info_repayment_date and due_credit_cards_info_billing_date %} | {% endif %}
+                    {% if due_credit_cards_info_billing_date %}
+                        账单日: {% for info in due_credit_cards_info_billing_date %}{{ info.bank }} ({{ info.billing_date }}){% if not forloop.last %}, {% endif %}{% endfor %}
+                    {% endif %}
+                </small>
+            {% else %}
+                <small class="text-light">暂无到期信用卡账单</small>
+            {% endif %}
+        </div>
+        <div class="d-flex align-items-center">
+            <small class="text-light me-2">共 {{ credit_cards|length }} 条</small>
+            {% if not customer.is_archived %}
+            <a href="{% url 'core:credit_card_create' customer.id %}" class="btn btn-sm btn-light">+ 添加记录</a>
+            {% endif %}
+            <button class="btn btn-sm btn-light ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#creditCardTable" aria-expanded="false" aria-controls="creditCardTable">
+                <i class="bi bi-chevron-down"></i>
+            </button>
+        </div>
+    </div>
+    <div class="collapse" id="creditCardTable">
+        <div class="card-body">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>银行渠道</th>
+                        <th>总授信额度</th>
+                        <th>有无分期</th>
+                        <th>分期金额</th>
+                        <th>账单日</th>
+                        <th>还款日</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for card in credit_cards %}
+                    <tr{% if card.id in due_credit_card_ids_repayment_date or card.id in due_credit_card_ids_billing_date %} class="table-warning"{% endif %}>
+                        <td>{{ card.bank }}</td>
+                        <td>¥{{ card.total_limit|floatformat:2 }}</td>
+                        <td>{% if card.has_installment %}<span class="badge bg-primary">是</span>{% else %}<span class="badge bg-secondary">否</span>{% endif %}</td>
+                        <td>¥{{ card.installment_amount|floatformat:2 }}</td>
+                        <td>{{ card.billing_date }}</td>
+                        <td>{{ card.repayment_date }}</td>
+                        <td>
+                            {% if not customer.is_archived %}
+                            <a href="{% url 'core:credit_card_update' card.id %}" class="btn btn-sm btn-primary me-1">编辑</a>
+                            <a href="{% url 'core:credit_card_delete' card.id %}" class="btn btn-sm btn-danger">删除</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted">暂无信用卡信息</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<!-- 信用贷款账单明细 -->
+<div class="card mb-4">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <h5 class="mb-0 me-2">信用贷款账单明细</h5>
+            {% if due_loan_ids %}
+            <small class="text-light">该客户有近两日待处理的还款哦</small>
+            {% endif %}
+        </div>
+        <div class="d-flex align-items-center">
+            <small class="text-light me-2">共 {{ loans|length }} 条</small>
+            {% if not customer.is_archived %}
+            <a href="{% url 'core:loan_create' customer.id %}" class="btn btn-sm btn-light">+ 添加记录</a>
+            {% endif %}
+            <button class="btn btn-sm btn-light ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#loanTable" aria-expanded="false" aria-controls="loanTable">
+                <i class="bi bi-chevron-down"></i>
+            </button>
+        </div>
+    </div>
+    <div class="collapse" id="loanTable">
+        <div class="card-body">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>银行渠道</th>
+                        <th>总授信额度</th>
+                        <th>贷款余额</th>
+                        <th>月还款</th>
+                        <th>到期时间</th>
+                        <th>还款日</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for loan in loans %}
+                    <tr{% if loan.id in due_loan_ids %} class="table-warning"{% endif %}>
+                        <td>{{ loan.bank }}</td>
+                        <td>¥{{ loan.total_limit|floatformat:2 }}</td>
+                        <td>¥{{ loan.balance|floatformat:2 }}</td>
+                        <td>¥{{ loan.monthly_payment|floatformat:2 }}</td>
+                        <td>{{ loan.due_date|date:"Y-m-d" }}</td>
+                        <td>{{ loan.repayment_date }}</td>
+                        <td>
+                            {% if not customer.is_archived %}
+                            <a href="{% url 'core:loan_update' loan.id %}" class="btn btn-sm btn-primary me-1">编辑</a>
+                            <a href="{% url 'core:loan_delete' loan.id %}" class="btn btn-sm btn-danger">删除</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted">暂无贷款信息</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 月供出款记录 -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">月供出款记录</h5>
+        <div class="d-flex align-items-center">
+            <small class="text-light me-2">共 {{ customer.monthlypayment_set.all|length }} 条</small>
+            {% if not customer.is_archived %}
+            <a href="{% url 'core:monthly_payment_create' customer.id %}" class="btn btn-sm btn-light">+ 添加记录</a>
+            {% endif %}
+            <button class="btn btn-sm btn-light ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#monthlyPaymentTable" aria-expanded="false" aria-controls="monthlyPaymentTable">
+                <i class="bi bi-chevron-down"></i>
+            </button>
+        </div>
+    </div>
+    <div class="collapse" id="monthlyPaymentTable">
+        <div class="card-body">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>出款时间</th>
+                        <th>出款金额</th>
+                        <th>是否私人借款</th>
+                        <th>资金使用天数</th>
+                        <th>资金使用成本</th>
+                        <th>备注</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mp in customer.monthlypayment_set.all %}
+                    <tr>
+                        <td>{{ mp.payment_date|date:"Y-m-d" }}</td>
+                        <td>¥{{ mp.amount|floatformat:2 }}</td>
+                        <td>{% if mp.is_private %}<span class="badge bg-danger">是</span>{% else %}<span class="badge bg-success">否</span>{% endif %}</td>
+                        <td>{{ mp.days_used }}</td>
+                        <td>¥{{ mp.cost|floatformat:2 }}</td>
+                        <td>{{ mp.notes|default:"" }}</td>
+                        <td>
+                            {% if not customer.is_archived %}
+                            <a href="{% url 'core:monthly_payment_update' mp.id %}" class="btn btn-sm btn-primary me-1">编辑</a>
+                            <a href="{% url 'core:monthly_payment_delete' mp.id %}" class="btn btn-sm btn-danger">删除</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted">暂无月供出款记录</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 总出款统计 -->
+<div class="card mb-4">
+    <div class="card-header bg-purple-600 text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">出款统计</h5>
+        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#paymentStats" aria-expanded="false" aria-controls="paymentStats">
+            <i class="bi bi-chevron-down"></i>
+        </button>
+    </div>
+    <div class="collapse" id="paymentStats">
+        <div class="card-body">
+            <div class="row justify-content-center text-center">
+                <div class="col-md-4 mb-3">
+                    <div class="stat-box p-3 bg-purple-50 rounded-lg border border-purple-100">
+                        <h6 class="text-purple-700 font-medium mb-1">总出款金额</h6>
+                        <p class="text-2xl font-bold text-purple-900">¥{{ total_payment|floatformat:2 }}</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="stat-box p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <h6 class="text-blue-700 font-medium mb-1">总使用成本</h6>
+                        <p class="text-2xl font-bold text-blue-900">¥{{ total_cost|floatformat:2 }}</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="stat-box p-3 bg-green-50 rounded-lg border border-green-100">
+                        <h6 class="text-green-700 font-medium mb-1">本金成本总计</h6>
+                        <p class="text-2xl font-bold text-green-900">¥{{ total_fee|floatformat:2 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 信用卡出款记录 -->
+<div class="card mb-4">
+    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">信用卡出款记录</h5>
+        <div class="d-flex align-items-center">
+            <small class="text-light me-2">共 {{ customer.creditcardpayment_set.all|length }} 条</small>
+            {% if not customer.is_archived %}
+            <a href="{% url 'core:credit_card_payment_create' customer.id %}" class="btn btn-sm btn-light">+ 添加记录</a>
+            {% endif %}
+            <button class="btn btn-sm btn-light ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#creditCardPaymentTable" aria-expanded="false" aria-controls="creditCardPaymentTable">
+                <i class="bi bi-chevron-down"></i>
+            </button>
+        </div>
+    </div>
+    <div class="collapse" id="creditCardPaymentTable">
+        <div class="card-body">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>出款时间</th>
+                        <th>银行</th>
+                        <th>出款金额</th>
+                        <th>信用卡费率</th>
+                        <th>刷出金额</th>
+                        <th>刷出时间</th>
+                        <th>备注</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cp in customer.creditcardpayment_set.all %}
+                    <tr>
+                        <td>{{ cp.payment_date|date:"Y-m-d" }}</td>
+                        <td>{{ cp.bank }}</td>
+                        <td>¥{{ cp.payment_amount|floatformat:2 }}</td>
+                        <td>¥{{ cp.fee|floatformat:2 }}</td>
+                        <td>¥{{ cp.withdrawal_amount|floatformat:2 }}</td>
+                        <td>{{ cp.withdrawal_date|date:"Y-m-d" }}</td>
+                        <td>{{ cp.notes|default:"" }}</td>
+                        <td>
+                            {% if not customer.is_archived %}
+                            <a href="{% url 'core:credit_card_payment_update' cp.id %}" class="btn btn-sm btn-primary me-1">编辑</a>
+                            <a href="{% url 'core:credit_card_payment_delete' cp.id %}" class="btn btn-sm btn-danger">删除</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8" class="text-center text-muted">暂无信用卡出款记录</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 0账单费用总计 -->
+<div class="card mb-4">
+    <div class="card-header bg-red-600 text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">0账单费用总计</h5>
+        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#zeroBillFee" aria-expanded="false" aria-controls="zeroBillFee">
+            <i class="bi bi-chevron-down"></i>
+        </button>
+    </div>
+    <div class="collapse" id="zeroBillFee">
+        <div class="card-body">
+            <div class="row justify-content-center text-center">
+                <div class="col-md-12 mb-3">
+                    <div class="stat-box p-4 bg-red-50 rounded-lg border border-red-100">
+                        <!-- <h6 class="text-red-700 font-medium mb-1">信用卡费率总和</h6> -->
+                        <p class="text-3xl font-bold text-red-900">¥{{ total_credit_card_fee|floatformat:2 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图片上传和展示区域 -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">相关图片</h5>
+        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#customerImages" aria-expanded="false" aria-controls="customerImages">
+            <i class="bi bi-chevron-down"></i>
+        </button>
+    </div>
+    <div class="collapse" id="customerImages">
+        <div class="card-body">
+            <!-- 图片上传表单 -->
+            <form id="image-upload-form" method="post" enctype="multipart/form-data" class="mb-4">
+                {% csrf_token %}
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" id="image-title" name="title" placeholder="图片标题（可选，仅对单张上传有效）">
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="image-file" name="image" accept="image/*" required>
+                            <button class="btn btn-primary" type="submit">上传图片</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 批量上传选项 -->
+                <div class="row g-2 mb-2">
+                    <div class="col-md-12">
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="batch-images" name="images" accept="image/*" multiple>
+                            <button class="btn btn-success" type="button" id="batch-upload-btn">批量上传</button>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                <small class="form-text text-muted">支持 JPG, PNG, GIF 格式，文件大小不超过 5MB</small>
+            </form>
+            
+            <!-- 图片展示区域 -->
+            <div id="images-container" class="row">
+                {% if customer_images %}
+                    {% for image in customer_images %}
+                    <div class="col-md-4 mb-3 image-item" data-image-id="{{ image.id }}">
+                        <div class="card">
+                            <img src="{{ image.image.url }}" class="card-img-top" alt="{{ image.title|default:'客户图片' }}" style="height: 200px; object-fit: cover;">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ image.title|default:'未命名图片' }}</h6>
+                                <p class="card-text"><small class="text-muted">{{ image.uploaded_at|date:"Y-m-d H:i" }}</small></p>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ image.image.url }}" download class="btn btn-sm btn-success">下载</a>
+                                    <button class="btn btn-sm btn-danger delete-image" data-image-id="{{ image.id }}">删除</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <p class="text-center text-muted">暂无相关图片</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 导航 -->
+<div class="mt-4">
+    <a href="{% url 'core:customer_list' %}" class="btn btn-outline-secondary">&larr; 返回客户列表</a>
+</div>
+
+<!-- 图片操作的JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 图片上传处理
+    const uploadForm = document.getElementById('image-upload-form');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(uploadForm);
+            const customerId = '{{ customer.id }}';
+            
+            fetch("{% url 'core:upload_customer_image' %}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 清空文件选择和标题输入
+                    document.getElementById('image-file').value = '';
+                    document.getElementById('image-title').value = '';
+                    document.getElementById('batch-images').value = '';
+                    
+                    // 显示成功消息
+                    alert(data.message);
+                    
+                    // 如果之前没有图片，移除"暂无相关图片"的提示
+                    const noImagesElement = document.querySelector('#images-container .col-12');
+                    if (noImagesElement) {
+                        noImagesElement.remove();
+                    }
+                    
+                    // 动态添加新上传的图片
+                    const imagesContainer = document.getElementById('images-container');
+                    
+                    // 处理单张上传或批量上传返回的数据
+                    const imagesToAdd = data.images || [data.image];
+                    
+                    imagesToAdd.forEach(image => {
+                        const newImageElement = document.createElement('div');
+                        newImageElement.className = 'col-md-4 mb-3 image-item';
+                        newImageElement.setAttribute('data-image-id', image.id);
+                        newImageElement.innerHTML = `
+                            <div class="card">
+                                <img src="${image.url}" class="card-img-top" alt="${image.title}" style="height: 200px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h6 class="card-title">${image.title}</h6>
+                                    <p class="card-text"><small class="text-muted">${image.uploaded_at}</small></p>
+                                    <div class="btn-group" role="group">
+                                        <a href="${image.url}" download class="btn btn-sm btn-success">下载</a>
+                                        <button class="btn btn-sm btn-danger delete-image" data-image-id="${image.id}">删除</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        imagesContainer.appendChild(newImageElement);
+                        
+                        // 为新添加的删除按钮添加事件监听器
+                        const newDeleteButton = newImageElement.querySelector('.delete-image');
+                        newDeleteButton.addEventListener('click', function() {
+                            const imageId = this.getAttribute('data-image-id');
+                            if (confirm('确定要删除这张图片吗？')) {
+                                fetch("{% url 'core:delete_customer_image' 0 %}".replace('0', imageId), {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                                    }
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        // 移除被删除的图片元素
+                                        document.querySelector(`.image-item[data-image-id="${imageId}"]`).remove();
+                                    } else {
+                                        alert('删除失败: ' + data.error);
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    alert('删除过程中发生错误');
+                                });
+                            }
+                        });
+                    });
+                } else {
+                    alert('上传失败: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('上传过程中发生错误');
+            });
+        });
+        
+        // 批量上传按钮处理
+        const batchUploadBtn = document.getElementById('batch-upload-btn');
+        if (batchUploadBtn) {
+            batchUploadBtn.addEventListener('click', function() {
+                const batchImagesInput = document.getElementById('batch-images');
+                if (batchImagesInput.files.length === 0) {
+                    alert('请选择要上传的图片文件');
+                    return;
+                }
+                
+                // 创建新的FormData对象用于批量上传
+                const batchFormData = new FormData();
+                batchFormData.append('customer_id', '{{ customer.id }}');
+                batchFormData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                
+                // 添加所有选择的图片文件
+                for (let i = 0; i < batchImagesInput.files.length; i++) {
+                    batchFormData.append('images', batchImagesInput.files[i]);
+                }
+                
+                fetch("{% url 'core:upload_customer_image' %}", {
+                    method: 'POST',
+                    body: batchFormData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 清空批量上传文件选择
+                        batchImagesInput.value = '';
+                        
+                        // 显示成功消息
+                        alert(data.message);
+                        
+                        // 如果之前没有图片，移除"暂无相关图片"的提示
+                        const noImagesElement = document.querySelector('#images-container .col-12');
+                        if (noImagesElement) {
+                            noImagesElement.remove();
+                        }
+                        
+                        // 动态添加新上传的图片
+                        const imagesContainer = document.getElementById('images-container');
+                        
+                        // 处理批量上传返回的数据
+                        data.images.forEach(image => {
+                            const newImageElement = document.createElement('div');
+                            newImageElement.className = 'col-md-4 mb-3 image-item';
+                            newImageElement.setAttribute('data-image-id', image.id);
+                            newImageElement.innerHTML = `
+                                <div class="card">
+                                    <img src="${image.url}" class="card-img-top" alt="${image.title}" style="height: 200px; object-fit: cover;">
+                                    <div class="card-body">
+                                        <h6 class="card-title">${image.title}</h6>
+                                        <p class="card-text"><small class="text-muted">${image.uploaded_at}</small></p>
+                                        <div class="btn-group" role="group">
+                                            <a href="${image.url}" download class="btn btn-sm btn-success">下载</a>
+                                            <button class="btn btn-sm btn-danger delete-image" data-image-id="${image.id}">删除</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            imagesContainer.appendChild(newImageElement);
+                            
+                            // 为新添加的删除按钮添加事件监听器
+                            const newDeleteButton = newImageElement.querySelector('.delete-image');
+                            newDeleteButton.addEventListener('click', function() {
+                                const imageId = this.getAttribute('data-image-id');
+                                if (confirm('确定要删除这张图片吗？')) {
+                                    fetch("{% url 'core:delete_customer_image' 0 %}".replace('0', imageId), {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                                        }
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.success) {
+                                            // 移除被删除的图片元素
+                                            document.querySelector(`.image-item[data-image-id="${imageId}"]`).remove();
+                                        } else {
+                                            alert('删除失败: ' + data.error);
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error:', error);
+                                        alert('删除过程中发生错误');
+                                    });
+                                }
+                            });
+                        });
+                    } else {
+                        alert('批量上传失败: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('批量上传过程中发生错误');
+                });
+            });
+        }
+    }
+    
+    // 图片删除处理
+    document.querySelectorAll('.delete-image').forEach(button => {
+        button.addEventListener('click', function() {
+            const imageId = this.getAttribute('data-image-id');
+            if (confirm('确定要删除这张图片吗？')) {
+                fetch("{% url 'core:delete_customer_image' 0 %}".replace('0', imageId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 移除被删除的图片元素
+                        document.querySelector(`.image-item[data-image-id="${imageId}"]`).remove();
+                    } else {
+                        alert('删除失败: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('删除过程中发生错误');
+                });
+            }
+        });
+    });
+    
+    // 处理所有折叠按钮的图标切换
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(button => {
+        button.addEventListener('click', function() {
+            const target = document.querySelector(this.getAttribute('data-bs-target'));
+            const icon = this.querySelector('i');
+            
+            // 等待折叠动画完成后再切换图标
+            setTimeout(() => {
+                if (target.classList.contains('show')) {
+                    // 折叠区域展开时显示向上箭头
+                    icon.classList.remove('bi-chevron-down');
+                    icon.classList.add('bi-chevron-up');
+                } else {
+                    // 折叠区域收起时显示向下箭头
+                    icon.classList.remove('bi-chevron-up');
+                    icon.classList.add('bi-chevron-down');
+                }
+            }, 350); // 与Bootstrap折叠动画时间保持一致
+        });
+    });
+    });
+</script>
+
+{% endblock %}

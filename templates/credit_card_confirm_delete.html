@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>删除信用卡账单</h3>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <p class="text-danger mb-4">您确定要删除以下信用卡账单吗？</p>
+        <div class="mb-4 p-3 bg-light rounded">
+            <p><strong>银行渠道：</strong> {{ credit_card.bank }}</p>
+            <p><strong>总授信额度：</strong> ¥{{ credit_card.total_limit|floatformat:2 }}</p>
+            <p><strong>账单日：</strong> {{ credit_card.billing_date }}</p>
+            <p><strong>还款日：</strong> {{ credit_card.repayment_date }}</p>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">删除</button>
+            <a href="{% url 'core:customer_detail' credit_card.customer.id %}" class="btn btn-secondary ms-2">取消</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

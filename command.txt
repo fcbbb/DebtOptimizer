@@ -1,0 +1,12 @@
+2. 安装依赖：
+bash cd DebtOptimizer pip install -r requirements.txt
+python -m pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+3. 运行迁移：
+bash python manage.py makemigrations python manage.py migrate
+4. 创建超级用户（可选，用于后台管理）：
+bash python manage.py createsuperuser
+
+
+打包命令
+python -m PyInstaller test.spec
+python -m PyInstaller --one-dir test.spec

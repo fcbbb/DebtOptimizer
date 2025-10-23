@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}删除客服电话{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>删除客服电话</h2>
+        <a href="{% url 'core:customer_service_phone_list' %}" class="btn btn-secondary">返回列表</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <p>确定要删除以下客服电话信息吗？</p>
+            <dl class="row">
+                <dt class="col-sm-3">银行/机构名称</dt>
+                <dd class="col-sm-9">{{ phone.bank_name }}</dd>
+                
+                <dt class="col-sm-3">客服电话</dt>
+                <dd class="col-sm-9">{{ phone.phone_number }}</dd>
+            </dl>
+            
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">确认删除</button>
+                <a href="{% url 'core:customer_service_phone_list' %}" class="btn btn-secondary">取消</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

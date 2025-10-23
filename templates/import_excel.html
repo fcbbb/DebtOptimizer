@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3"><i class="fas fa-file-excel"></i> 从 Excel 导入客户信息</h1>
+</div>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'core:index' %}">主页</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'core:customer_list' %}">客户列表</a></li>
+        <li class="breadcrumb-item active" aria-current="page">导入客户</li>
+    </ol>
+</nav>
+
+<div class="card mb-4">
+    <div class="card-body">
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            {{ form.file.label_tag }}
+                            {{ form.file }}
+                            {% if form.file.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.file.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{% url 'core:customer_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> 取消
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> 上传并导入
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+<div class="card mb-4">
+                <div class="card-header bg-warning bg-opacity-10">
+                    <h2 class="h5 mb-0"><i class="fas fa-info-circle"></i> 导入说明</h2>
+                </div>
+                <div class="card-body">
+                    <ul class="list-disc pl-5 mb-0">
+                        <li class="mb-2">系统将根据您上传的 Excel 文件自动创建客户并填充所有信息（信用卡、贷款、出款记录）。</li>
+                        <li class="mb-2">文件必须包含 "Sheet1" 工作表，且格式与您提供的模板完全一致。</li>
+                        <li>如果客户姓名已存在，系统会更新其所有信息（旧数据会被清除）。</li>
+                    </ul>
+                </div>
+            </div>
+{% endblock %}
